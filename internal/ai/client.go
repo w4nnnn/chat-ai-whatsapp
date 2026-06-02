@@ -13,10 +13,24 @@ import (
 
 // OpenAI-compatible request/response types for 9Router
 
+// ContentPart is a part of a multimodal message (text or image)
+type ContentPart struct {
+	Type     string        `json:"type"`
+	Text     string        `json:"text,omitempty"`
+	ImageURL *ImageURLPart `json:"image_url,omitempty"`
+}
+
+type ImageURLPart struct {
+	URL string `json:"url"`
+}
+
+// Message represents a chat message. Content can be:
+// - string (for text-only messages)
+// - []ContentPart (for multimodal messages with images)
 type Message struct {
-	Role       string     `json:"role"`
-	Content    string     `json:"content"`
-	ToolCallID string     `json:"tool_call_id,omitempty"`
+	Role       string      `json:"role"`
+	Content    any         `json:"content"`
+	ToolCallID string      `json:"tool_call_id,omitempty"`
 }
 
 type ToolDefinition struct {

@@ -2,9 +2,9 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
-      - redis-data:/data
+      - ./data/redis:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -22,6 +22,8 @@ services:
       - CHOWN
       - SETGID
       - SETUID
+    volumes:
+      - ./data/searxng:/etc/searxng
     restart: unless-stopped
 
   9router:
@@ -32,6 +34,8 @@ services:
       - PORT=${NINE_ROUTER_PORT:-20128}
       - HOSTNAME=0.0.0.0
       - DATA_DIR=/app/data
+    volumes:
+      - ./data/9router:/app/data
     restart: unless-stopped
 
   app:
@@ -39,15 +43,11 @@ services:
     ports:
       - "${APP_PORT:-3000}:3000"
     env_file: .env
+    environment:
+      - DATA_DIR=/app/data
     depends_on:
       redis:
         condition: service_healthy
     volumes:
-      - whatsmeow-data:/app/data
+      - ./data/whatsmeow:/app/data
     restart: unless-stopped
-
-volumes:
-  redis-data:
-  searxng-data:
-  9router-data:
-  whatsmeow-data:

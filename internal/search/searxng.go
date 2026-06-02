@@ -53,6 +53,7 @@ func (c *Client) Search(ctx context.Context, query string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("create request: %w", err)
 	}
+	req.Header.Set("X-Forwarded-For", "127.0.0.1")
 
 	resp, err := c.http.Do(req)
 	if err != nil {

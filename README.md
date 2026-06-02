@@ -79,11 +79,17 @@ docker compose up -d --build app
 ├── internal/
 │   ├── ai/                   # 9Router API client
 │   ├── config/               # Config loader
+│   ├── format/               # Markdown → WhatsApp formatter
 │   ├── handler/              # Message orchestrator
 │   ├── logger/               # Logger
 │   ├── search/               # SearXNG client
 │   ├── store/                # Redis client
 │   └── whatsapp/             # whatsmeow client
+├── data/                     # Runtime data (bind mounts)
+│   ├── redis/                # Redis persistence
+│   ├── searxng/              # SearXNG settings
+│   ├── 9router/              # 9Router data
+│   └── whatsmeow/            # WhatsApp session store
 ├── docker-compose.yml
 ├── Dockerfile
 └── .env.example
@@ -94,6 +100,7 @@ docker compose up -d --build app
 - AI-powered text replies
 - Web search via SearXNG
 - Vision/image support (mimo-v2.5)
+- Markdown → WhatsApp formatting (bold, italic, code, etc.)
 - Rate limiting (10 msg/min/user)
 - Session memory (20 msgs, 24h expiry)
 - WhatsApp multi-device (QR pairing)

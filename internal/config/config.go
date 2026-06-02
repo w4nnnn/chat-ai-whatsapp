@@ -22,6 +22,7 @@ type Config struct {
 	Port     int
 	Env      string
 	LogLevel string
+	DataDir  string
 
 	// Bot behavior
 	SelfRespon     bool
@@ -43,6 +44,7 @@ func Load() *Config {
 		Port:     getEnvInt("PORT", 3000),
 		Env:      getEnv("NODE_ENV", "development"),
 		LogLevel: getEnv("LOG_LEVEL", "info"),
+		DataDir:  getEnv("DATA_DIR", "."),
 
 		SelfRespon:     getEnvBool("SELF_RESPON", false),
 		AllowedNumbers: allowed,

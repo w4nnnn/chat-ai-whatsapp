@@ -37,8 +37,8 @@ func New(aiClient *ai.Client, redisStore *store.Store, searchClient *search.Clie
 }
 
 // Handle processes a message and returns the AI response.
-// It handles multi-step tool calling (e.g., web search).
-func (h *Handler) Handle(ctx context.Context, phone, text string) (string, error) {
+// If imageBase64 is not empty, it's sent as a multimodal message.
+func (h *Handler) Handle(ctx context.Context, phone, text string, imageBase64 string) (string, error) {
 	// 1. Rate limit check
 	allowed, err := h.store.CheckRateLimit(ctx, phone)
 	if err != nil {
@@ -62,7 +62,26 @@ func (h *Handler) Handle(ctx context.Context, phone, text string) (string, error
 	for _, m := range history {
 		messages = append(messages, ai.Message{Role: m.Role, Content: m.Content})
 	}
-	messages = append(messages, ai.Message{Role: "user", Content: text})
+
+	// Build user content — support multimodal (text + image)
+	var userContent any = text
+	if imageBase64 != "" {
+		caption := text
+		if caption == "" {
+			caption = "Analisis gambar ini"
+		}
+		parts := []ai.ContentPart{
+			{Type: "text", Text: caption},
+			{
+				Type: "image_url",
+				ImageURL: &ai.ImageURLPart{
+					URL: "data:image/jpeg;base64," + imageBase64,
+				},
+			},
+		}
+		userContent = parts
+	}
+	messages = append(messages, ai.Message{Role: "user", Content: userContent})
 
 	// 4. Call AI with retry (2 attempts)
 	var response string

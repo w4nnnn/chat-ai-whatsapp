@@ -3,6 +3,7 @@ package whatsapp
 import (
 	"context"
 	"database/sql"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"os/signal"
@@ -19,6 +20,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"chat-ai-whatsapp/internal/config"
+	"chat-ai-whatsapp/internal/format"
 	"chat-ai-whatsapp/internal/handler"
 	"chat-ai-whatsapp/internal/logger"
 
@@ -190,14 +192,28 @@ func (wc *Client) handleMessage(msg *events.Message) {
 		logger.Debug("Ignored message from %s (candidates: %v)", phoneNumber, candidateIDs)
 		return
 	}
-	// ─── Extract text content ────────────────────────────
+	// ─── Extract text & image ────────────────────────────
 	text := msg.Message.GetConversation()
 	if text == "" {
 		if ext := msg.Message.GetExtendedTextMessage(); ext != nil {
 			text = ext.GetText()
 		}
 	}
-	if text == "" {
+
+	// Download image if present
+	var imageBase64 string
+	if imgMsg := msg.Message.GetImageMessage(); imgMsg != nil {
+		data, err := wc.client.Download(context.Background(), imgMsg)
+		if err != nil {
+			logger.Error("Download image failed: %v", err)
+		} else {
+			imageBase64 = base64.StdEncoding.EncodeToString(data)
+			logger.Debug("Image downloaded: %d bytes", len(data))
+		}
+	}
+
+	// Skip if no text and no image
+	if text == "" && imageBase64 == "" {
 		return
 	}
 
@@ -212,14 +228,11 @@ func (wc *Client) handleMessage(msg *events.Message) {
 	chatJID := msg.Info.Chat
 
 	// ─── Keepalive typing indicator ─────────────────────
-	// WA typing indicator expires ~10s. AI butuh ~9s.
-	// Kirim "composing" tiap 5s sampe AI selesai.
 	typingDone := make(chan struct{})
 	defer close(typingDone)
 	go func() {
 		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
-		// Kirim pertama langsung
 		wc.client.SendChatPresence(context.Background(), chatJID, types.ChatPresenceComposing, types.ChatPresenceMediaText)
 		for {
 			select {
@@ -235,7 +248,7 @@ func (wc *Client) handleMessage(msg *events.Message) {
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 
-	response, err := wc.handler.Handle(ctx, phone, text)
+	response, err := wc.handler.Handle(ctx, phone, text, imageBase64)
 	if err != nil {
 		logger.Error("Handle message: %v", err)
 		response = "Maaf, ada kendala teknis. Coba tanya lagi ya!"
@@ -244,8 +257,9 @@ func (wc *Client) handleMessage(msg *events.Message) {
 	// Stop typing, kirim pesan
 	_ = wc.client.SendChatPresence(context.Background(), chatJID, types.ChatPresencePaused, types.ChatPresenceMediaText)
 
+	formatted := format.ToWhatsApp(response)
 	_, err = wc.client.SendMessage(ctx, chatJID, &waProto.Message{
-		Conversation: proto.String(response),
+		Conversation: proto.String(formatted),
 	})
 	if err != nil {
 		logger.Error("Send message: %v", err)

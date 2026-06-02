@@ -22,5 +22,20 @@ whatsmeow-store.db-shm
 .DS_Store
 Thumbs.db
 
+# Docker data (bind mounts)
+data/
+
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
 superpowers
 .codegraph

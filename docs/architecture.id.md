@@ -112,6 +112,8 @@ handler.Handle():
     ↓
 Kirim "mengetik..." tiap 5 detik selama AI proses
     ↓
+Konversi Markdown → format WhatsApp (tebal, miring, dll)
+    ↓
 whatsmeow kirim balasan via SendMessage()
 ```
 
@@ -126,9 +128,15 @@ whatsmeow kirim balasan via SendMessage()
 
 ### SQLite (Auth Store)
 
-File: `whatsmeow-store.db`
+File: `{DATA_DIR}/whatsmeow-store.db` (default: `./data/whatsmeow/` di Docker atau `./` lokal)
 
 Menyimpan kredensial sesi WhatsApp (signal keys, prekeys, identity). Dikelola otomatis oleh sqlstore dari whatsmeow.
+
+Semua data runtime pake Docker bind mounts di `./data/`:
+- `./data/redis/` — Persistensi Redis
+- `./data/searxng/` — Konfigurasi settings.yml SearXNG
+- `./data/9router/` — Data proxy 9Router
+- `./data/whatsmeow/` — Session store WhatsApp
 
 ## Error Handling
 

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"os"
+	"path/filepath"
 
 	"github.com/joho/godotenv"
 
@@ -42,8 +43,9 @@ func main() {
 	// Message handler
 	msgHandler := handler.New(aiClient, redisStore, searchClient)
 
-	// WhatsApp client
-	waClient, err := whatsapp.New(cfg, "whatsmeow-store.db", msgHandler)
+	// WhatsApp client — DB path di DATA_DIR
+	dbPath := filepath.Join(cfg.DataDir, "whatsmeow-store.db")
+	waClient, err := whatsapp.New(cfg, dbPath, msgHandler)
 	if err != nil {
 		logger.Error("Failed to create WhatsApp client: %v", err)
 		os.Exit(1)

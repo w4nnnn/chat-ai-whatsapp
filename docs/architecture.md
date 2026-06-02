@@ -112,6 +112,8 @@ handler.Handle():
     ↓
 Send "typing..." keepalive every 5s while AI processes
     ↓
+Convert Markdown → WhatsApp format (bold, italic, etc.)
+    ↓
 whatsmeow sends reply via SendMessage()
 ```
 
@@ -126,9 +128,15 @@ whatsmeow sends reply via SendMessage()
 
 ### SQLite (Auth Store)
 
-File: `whatsmeow-store.db`
+File: `{DATA_DIR}/whatsmeow-store.db` (default: `./data/whatsmeow/` in Docker or `./` locally)
 
 Stores WhatsApp session credentials (signal keys, prekeys, identity). Managed automatically by whatsmeow's sqlstore.
+
+All runtime data uses Docker bind mounts at `./data/`:
+- `./data/redis/` — Redis persistence
+- `./data/searxng/` — SearXNG settings.yml
+- `./data/9router/` — 9Router proxy data
+- `./data/whatsmeow/` — WhatsApp session store
 
 ## Error Handling
 
