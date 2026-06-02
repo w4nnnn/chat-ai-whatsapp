@@ -37,22 +37,30 @@ Semua pengaturan di `.env`:
 | `REDIS_URL` | `redis://127.0.0.1:6379` | Koneksi Redis |
 | `SEARXNG_BASE_URL` | `http://127.0.0.1:4000` | Endpoint SearXNG |
 | `SELF_RESPON` | `false` | Balas chat sendiri |
-| `ALLOWED_NUMBERS` | `*` | Nomor diizinkan (`*` = semua, atau `62812,62813`) |
+| `ALLOWED_NUMBERS` | `*` | Nomor diizinkan (`*` = semua, `self` = sendiri, atau `62812,self`) |
 | `LOG_LEVEL` | `info` | Level log (debug, info, warn, error) |
 
 ### Nomor yang Diizinkan
 
 - `*` — balas semua nomor
-- `62812,62813` — cuma nomor tertentu
+- `self` — cuma balas chat sendiri (testing)
+- `62812,self` — chat sendiri + nomor tertentu
+- `62812,62813` — cuma nomor tertentu (pake nomor HP, bukan LID)
 
-### Self-Reply (Testing)
+### Mode Testing
 
+Dua cara untuk testing dengan chat sendiri:
+
+**Opsi A — Izinkan semua (termasuk diri sendiri):**
 ```env
 SELF_RESPON=true
 ALLOWED_NUMBERS=*
 ```
 
-Bot akan membalas chat Anda sendiri tanpa looping.
+**Opsi B — Hanya diri sendiri (abaikan yang lain):**
+```env
+ALLOWED_NUMBERS=self
+```
 
 ## Docker
 

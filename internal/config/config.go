@@ -32,9 +32,9 @@ func Load() *Config {
 	allowed := getAllowedNumbers("ALLOWED_NUMBERS", "*")
 
 	return &Config{
-		NineRouterBaseURL: getEnv("NINE_ROUTER_BASE_URL", "http://127.0.0.1:20128/v1"),
-		NineRouterModel:   getEnv("NINE_ROUTER_MODEL", "ocg/mimo-v2.5"),
-		NineRouterAPIKey:  getEnv("NINE_ROUTER_API_KEY", "sk-9router-key"),
+	NineRouterBaseURL: getEnv("NINE_ROUTER_BASE_URL", "http://127.0.0.1:20128/v1"),
+	NineRouterModel:   getEnv("NINE_ROUTER_MODEL", "kr/claude-sonnet-4.5"),
+	NineRouterAPIKey:  getEnv("NINE_ROUTER_API_KEY", "sk-9router-key"),
 
 		RedisURL: getEnv("REDIS_URL", "redis://127.0.0.1:6379"),
 

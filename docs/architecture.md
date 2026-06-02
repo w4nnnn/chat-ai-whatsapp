@@ -79,9 +79,17 @@ User sends message
 whatsmeow emits events.Message
     ↓
 client.handleMessage():
-    ├─ Check self_respon (skip if false && IsFromMe)
     ├─ Check group chat (skip @g.us)
+    ├─ Resolve phone number from JID
+    │   ├─ Sender may be LID (e.g., 88721...@lid)
+    │   ├─ Use SenderAlt/RecipientAlt for phone number
+    │   └─ candidateIDs = [phone, lid, ...] for matching
     ├─ Check allowed_numbers
+    │   ├─ * = allow all
+    │   ├─ self = only when Chat == own JID
+    │   └─ number = match against candidateIDs
+    ├─ Check message timestamp (skip if before connectTime)
+    │   └─ Prevents replying to old messages from history sync
     └─ Extract text content
     ↓
 handler.Handle():
@@ -101,6 +109,8 @@ handler.Handle():
     ├─ addMessage(phone, userMsg) → Redis LPUSH+LTRIM
     ├─ addMessage(phone, aiMsg) → Redis LPUSH+LTRIM
     └─ Return response text
+    ↓
+Send "typing..." keepalive every 5s while AI processes
     ↓
 whatsmeow sends reply via SendMessage()
 ```
@@ -132,6 +142,8 @@ Stores WhatsApp session credentials (signal keys, prekeys, identity). Managed au
 | Rate limited | Polite "please wait" reply |
 | Unknown message type | Silently skipped |
 | Image message | Currently skipped (text only for now) |
+| Old message (history sync) | Silently skipped based on timestamp |
+| LID vs phone number | Resolved via SenderAlt/RecipientAlt for filtering |
 
 ## Configuration
 

@@ -27,9 +27,10 @@ import (
 )
 
 type Client struct {
-	client  *whatsmeow.Client
-	handler *handler.Handler
-	config  *config.Config
+	client      *whatsmeow.Client
+	handler     *handler.Handler
+	config      *config.Config
+	connectTime time.Time // waktu bot konek — untuk filter pesan lama
 }
 
 func New(cfg *config.Config, dbPath string, msgHandler *handler.Handler) (*Client, error) {
@@ -115,7 +116,8 @@ func (wc *Client) handleEvent(evt interface{}) {
 	case *events.Message:
 		wc.handleMessage(v)
 	case *events.Connected:
-		logger.Info("WhatsApp connected!")
+		wc.connectTime = time.Now()
+		logger.Info("WhatsApp connected at %s", wc.connectTime.Format(time.TimeOnly))
 	case *events.Disconnected:
 		logger.Warn("WhatsApp disconnected")
 	case *events.LoggedOut:
@@ -124,34 +126,70 @@ func (wc *Client) handleEvent(evt interface{}) {
 }
 
 func (wc *Client) handleMessage(msg *events.Message) {
-	// ─── Filter: self messages ──────────────────────────
-	if !wc.config.SelfRespon && msg.Info.IsFromMe {
-		return
-	}
-
 	// ─── Filter: group chats ────────────────────────────
 	if msg.Info.Chat.Server == "g.us" {
 		return
 	}
 
-	// ─── Filter: allowed numbers ─────────────────────────
-	phone := msg.Info.Sender.String()
+	// ─── Ekstrak nomor HP dari JID ─────────────────────
+	// whatsmeow v7 pake LID (angka random). Nomor HP ada di SenderAlt/RecipientAlt.
+	senderJID := msg.Info.Sender.ToNonAD()
+	
+	// Cari nomor HP: prioritaskan SenderAlt (kalo mode LID)
+	pnJID := senderJID
+	if !msg.Info.SenderAlt.IsEmpty() {
+		pnJID = msg.Info.SenderAlt.ToNonAD()
+	}
+	// Untuk self-messages, RecipientAlt punya nomor tujuan
+	if msg.Info.IsFromMe && !msg.Info.RecipientAlt.IsEmpty() {
+		pnJID = msg.Info.RecipientAlt.ToNonAD()
+	}
+	
+	phone := pnJID.String()
 	if phone == "" {
 		return
 	}
-	phoneNumber := strings.Split(phone, "@")[0] // ambil nomor aja tanpa @s.whatsapp.net
+	phoneNumber := strings.Split(phone, "@")[0]
+
+	// Kumpulin semua ID yang mungkin untuk filter
+	candidateIDs := []string{phoneNumber}
+	if !senderJID.IsEmpty() && senderJID.String() != phone {
+		candidateIDs = append(candidateIDs, strings.Split(senderJID.String(), "@")[0])
+	}
+
 	isAllowed := false
 	for _, a := range wc.config.AllowedNumbers {
-		if a == "*" || a == phoneNumber {
+		switch {
+		case a == "*":
 			isAllowed = true
+		case a == "self" && msg.Info.IsFromMe:
+			// self = cuma kalo chat ke diri sendiri
+			chatJID := msg.Info.Chat.ToNonAD()
+			isAllowed = chatJID == senderJID || chatJID == pnJID
+		default:
+			// Cocokkan dengan nomor HP (dari SenderAlt / RecipientAlt)
+			for _, id := range candidateIDs {
+				if a == id {
+					isAllowed = true
+					break
+				}
+			}
+		}
+		if isAllowed {
 			break
 		}
 	}
-	if !isAllowed {
-		logger.Debug("Ignored message from %s (not in allowed list)", phoneNumber)
-		return
+
+	// SelfRespon=true: izinkan self message cuma kalo chat ke diri sendiri
+	if !isAllowed && msg.Info.IsFromMe && wc.config.SelfRespon {
+		chatJID := msg.Info.Chat.ToNonAD()
+		isAllowed = chatJID == senderJID || chatJID == pnJID
 	}
 
+	if !isAllowed {
+		logger.Debug("Ignored message from %s (candidates: %v)", phoneNumber, candidateIDs)
+		return
+	}
 	// ─── Extract text content ────────────────────────────
 	text := msg.Message.GetConversation()
 	if text == "" {
@@ -163,13 +201,38 @@ func (wc *Client) handleMessage(msg *events.Message) {
 		return
 	}
 
+	// ─── Skip pesan lama (dari sebelum bot connect) ─────
+	if !wc.connectTime.IsZero() && msg.Info.Timestamp.Before(wc.connectTime) {
+		logger.Debug("Skipped old message from %s (%s)", phoneNumber, msg.Info.Timestamp.Format(time.TimeOnly))
+		return
+	}
+
 	logger.Info("Message from %s: %s...", phoneNumber, truncate(text, 50))
 
-	// Send typing indicator
-	_ = wc.client.SendChatPresence(context.Background(), msg.Info.Sender, types.ChatPresenceComposing, types.ChatPresenceMediaText)
+	chatJID := msg.Info.Chat
+
+	// ─── Keepalive typing indicator ─────────────────────
+	// WA typing indicator expires ~10s. AI butuh ~9s.
+	// Kirim "composing" tiap 5s sampe AI selesai.
+	typingDone := make(chan struct{})
+	defer close(typingDone)
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+		// Kirim pertama langsung
+		wc.client.SendChatPresence(context.Background(), chatJID, types.ChatPresenceComposing, types.ChatPresenceMediaText)
+		for {
+			select {
+			case <-ticker.C:
+				wc.client.SendChatPresence(context.Background(), chatJID, types.ChatPresenceComposing, types.ChatPresenceMediaText)
+			case <-typingDone:
+				return
+			}
+		}
+	}()
 
 	// Process with AI
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 
 	response, err := wc.handler.Handle(ctx, phone, text)
@@ -178,15 +241,16 @@ func (wc *Client) handleMessage(msg *events.Message) {
 		response = "Maaf, ada kendala teknis. Coba tanya lagi ya!"
 	}
 
-	// Send reply
-	jid := msg.Info.Sender
-	_, err = wc.client.SendMessage(ctx, jid, &waProto.Message{
+	// Stop typing, kirim pesan
+	_ = wc.client.SendChatPresence(context.Background(), chatJID, types.ChatPresencePaused, types.ChatPresenceMediaText)
+
+	_, err = wc.client.SendMessage(ctx, chatJID, &waProto.Message{
 		Conversation: proto.String(response),
 	})
 	if err != nil {
 		logger.Error("Send message: %v", err)
 	} else {
-		logger.Info("Reply sent to %s", phone)
+		logger.Info("Reply sent to %s", phoneNumber)
 	}
 }
 

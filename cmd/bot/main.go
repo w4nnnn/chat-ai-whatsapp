@@ -4,6 +4,8 @@ import (
 	"context"
 	"os"
 
+	"github.com/joho/godotenv"
+
 	"chat-ai-whatsapp/internal/ai"
 	"chat-ai-whatsapp/internal/config"
 	"chat-ai-whatsapp/internal/handler"
@@ -14,6 +16,9 @@ import (
 )
 
 func main() {
+	// Load .env file — ignore error kalo gak ada
+	_ = godotenv.Load()
+
 	cfg := config.Load()
 	logger.Info("Starting WhatsApp AI Chatbot...")
 

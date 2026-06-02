@@ -79,9 +79,17 @@ User kirim pesan
 whatsmeow emit events.Message
     ↓
 client.handleMessage():
-    ├─ Cek self_respon (skip jika false && IsFromMe)
     ├─ Cek group chat (skip @g.us)
+    ├─ Resolve nomor HP dari JID
+    │   ├─ Sender bisa berupa LID (contoh: 88721...@lid)
+    │   ├─ Pake SenderAlt/RecipientAlt buat dapetin nomor HP
+    │   └─ candidateIDs = [nomor, lid, ...] buat pencocokan
     ├─ Cek allowed_numbers
+    │   ├─ * = izinkan semua
+    │   ├─ self = cuma kalo Chat == JID sendiri
+    │   └─ nomor = cocokkan dengan candidateIDs
+    ├─ Cek timestamp pesan (skip jika sebelum connectTime)
+    │   └─ Mencegah bales pesan lama dari history sync
     └─ Ambil teks pesan
     ↓
 handler.Handle():
@@ -101,6 +109,8 @@ handler.Handle():
     ├─ addMessage(phone, userMsg) → Redis LPUSH+LTRIM
     ├─ addMessage(phone, aiMsg) → Redis LPUSH+LTRIM
     └─ Kembalikan teks response
+    ↓
+Kirim "mengetik..." tiap 5 detik selama AI proses
     ↓
 whatsmeow kirim balasan via SendMessage()
 ```
@@ -132,6 +142,8 @@ Menyimpan kredensial sesi WhatsApp (signal keys, prekeys, identity). Dikelola ot
 | Rate limit terkena | Reply "mohon tunggu" |
 | Tipe pesan tak dikenal | Skip diam-diam |
 | Pesan gambar | Saat ini di-skip (text-only dulu) |
+| Pesan lama (history sync) | Skip diam-diam berdasarkan timestamp |
+| LID vs nomor HP | Diresolve via SenderAlt/RecipientAlt untuk filtering |
 
 ## Konfigurasi
 

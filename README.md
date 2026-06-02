@@ -37,22 +37,30 @@ All settings in `.env`:
 | `REDIS_URL` | `redis://127.0.0.1:6379` | Redis connection |
 | `SEARXNG_BASE_URL` | `http://127.0.0.1:4000` | SearXNG endpoint |
 | `SELF_RESPON` | `false` | Reply to own messages |
-| `ALLOWED_NUMBERS` | `*` | Allowed numbers (`*` = all, or `62812,62813`) |
+| `ALLOWED_NUMBERS` | `*` | Allowed numbers (`*` = all, `self` = own, or `62812,self`) |
 | `LOG_LEVEL` | `info` | Log level (debug, info, warn, error) |
 
 ### Allowed Numbers
 
 - `*` — respond to everyone
+- `self` — only respond to your own messages (testing)
+- `62812,self` — your own messages + specific numbers
 - `62812,62813` — only specific numbers
 
-### Self-Reply (Testing)
+### Testing Mode
 
+Two ways to test with your own messages:
+
+**Option A — Allow everyone (including yourself):**
 ```env
 SELF_RESPON=true
 ALLOWED_NUMBERS=*
 ```
 
-Bot will reply to your own messages without looping.
+**Option B — Self only (ignore everyone else):**
+```env
+ALLOWED_NUMBERS=self
+```
 
 ## Docker
 
