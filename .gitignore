@@ -1,0 +1,26 @@
+# Go
+/bot
+/bot.exe
+*.exe
+
+# Database (whatsmeow session store)
+whatsmeow-store.db
+whatsmeow-store.db-wal
+whatsmeow-store.db-shm
+
+# Env
+.env
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+superpowers
+.codegraph
