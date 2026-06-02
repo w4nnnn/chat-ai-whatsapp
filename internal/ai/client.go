@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"chat-ai-whatsapp/internal/logger"
 )
 
 // OpenAI-compatible request/response types for 9Router
@@ -151,7 +153,17 @@ func (c *Client) chat(ctx context.Context, messages []Message, includeTools bool
 		return "", nil, fmt.Errorf("create request: %w", err)
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
+
+	// Set Host header biar 9Router anggap ini request local
+	httpReq.Host = "localhost:20128"
+
+	// Debug: log API key (masked) dan header
+	keyMask := ""
+	if len(c.apiKey) > 8 {
+		keyMask = c.apiKey[:4] + "..." + c.apiKey[len(c.apiKey)-4:]
+	}
 	httpReq.Header.Set("Authorization", "Bearer "+c.apiKey)
+	logger.Debug("9Router request: URL=%s, Key=%s, Auth=%s", c.baseURL, keyMask, httpReq.Header.Get("Authorization"))
 
 	resp, err := c.http.Do(httpReq)
 	if err != nil {
@@ -163,6 +175,8 @@ func (c *Client) chat(ctx context.Context, messages []Message, includeTools bool
 	if err != nil {
 		return "", nil, fmt.Errorf("read body: %w", err)
 	}
+
+	logger.Debug("9Router response: status=%d, body=%s", resp.StatusCode, string(respBody[:min(len(respBody), 300)]))
 
 	if resp.StatusCode != http.StatusOK {
 		return "", nil, fmt.Errorf("9Router status %d: %s", resp.StatusCode, string(respBody))
