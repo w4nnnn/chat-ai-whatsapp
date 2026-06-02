@@ -143,10 +143,6 @@ func (wc *Client) handleMessage(msg *events.Message) {
 	if !msg.Info.SenderAlt.IsEmpty() {
 		pnJID = msg.Info.SenderAlt.ToNonAD()
 	}
-	// Untuk self-messages, RecipientAlt punya nomor tujuan
-	if msg.Info.IsFromMe && !msg.Info.RecipientAlt.IsEmpty() {
-		pnJID = msg.Info.RecipientAlt.ToNonAD()
-	}
 	
 	phone := pnJID.String()
 	if phone == "" {
