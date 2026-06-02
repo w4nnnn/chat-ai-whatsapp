@@ -2,7 +2,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      - "${REDIS_PORT:-56379}:6379"
     volumes:
       - ./data/redis:/data
     healthcheck:
@@ -14,7 +14,7 @@ services:
   searxng:
     image: searxng/searxng:latest
     ports:
-      - "${SEARXNG_PORT:-4000}:8080"
+      - "${SEARXNG_PORT:-54000}:8080"
     environment:
       - SEARXNG_BASE_URL=${SEARXNG_BASE_URL:-http://searxng:8080}
       - SEARXNG_SECRET_KEY=${SEARXNG_SECRET_KEY:-change-me}
@@ -29,9 +29,9 @@ services:
   9router:
     image: decolua/9router:latest
     ports:
-      - "${NINE_ROUTER_PORT:-20128}:20128"
+      - "${NINE_ROUTER_PORT:-52012}:20128"
     environment:
-      - PORT=${NINE_ROUTER_PORT:-20128}
+      - PORT=20128
       - HOSTNAME=0.0.0.0
       - DATA_DIR=/app/data
     volumes:
@@ -41,7 +41,7 @@ services:
   app:
     build: .
     ports:
-      - "${APP_PORT:-3000}:3000"
+      - "${APP_PORT:-53000}:3000"
     env_file: .env
     environment:
       - DATA_DIR=/app/data
