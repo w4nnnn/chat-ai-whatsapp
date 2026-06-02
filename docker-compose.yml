@@ -45,6 +45,9 @@ services:
     env_file: .env
     environment:
       - DATA_DIR=/app/data
+      - REDIS_URL=redis://redis:6379
+      - SEARXNG_BASE_URL=http://searxng:8080
+      - NINE_ROUTER_BASE_URL=http://9router:20128/v1
     depends_on:
       redis:
         condition: service_healthy

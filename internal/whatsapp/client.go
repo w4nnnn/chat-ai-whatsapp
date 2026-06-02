@@ -42,10 +42,11 @@ func New(cfg *config.Config, dbPath string, msgHandler *handler.Handler) (*Clien
 		return nil, fmt.Errorf("open database: %w", err)
 	}
 
-	// Enable foreign keys and WAL mode
+	// Enable foreign keys, WAL mode, and busy timeout
 	for _, pragma := range []string{
 		"PRAGMA foreign_keys = ON",
 		"PRAGMA journal_mode = WAL",
+		"PRAGMA busy_timeout = 5000",
 	} {
 		if _, err := db.ExecContext(ctx, pragma); err != nil {
 			return nil, fmt.Errorf("exec %s: %w", pragma, err)
