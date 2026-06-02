@@ -34,6 +34,7 @@ services:
       - PORT=20128
       - HOSTNAME=0.0.0.0
       - DATA_DIR=/app/data
+      - REQUIRE_API_KEY=false
     volumes:
       - ./data/9router:/app/data
     restart: unless-stopped
