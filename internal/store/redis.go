@@ -11,7 +11,7 @@ import (
 
 const (
 	msgPrefix       = "whatsapp:sessions:"
-	maxMessages     = 20
+	maxMessages     = 6
 	ttlSeconds      = 86400 // 24h
 	rateLimitPrefix = "whatsapp:ratelimit:"
 	maxPerMinute    = 10
