@@ -26,6 +26,10 @@ type ImageURLPart struct {
 	URL string `json:"url"`
 }
 
+type ReasoningConfig struct {
+	Effort string `json:"effort"`
+}
+
 // Message represents a chat message. Content can be:
 // - string (for text-only messages)
 // - []ContentPart (for multimodal messages with images)
@@ -47,10 +51,11 @@ type FunctionDef struct {
 }
 
 type chatRequest struct {
-	Model       string          `json:"model"`
-	Messages    []Message       `json:"messages"`
-	Tools       []ToolDefinition `json:"tools,omitempty"`
-	ToolChoice  string          `json:"tool_choice,omitempty"`
+	Model      string           `json:"model"`
+	Messages   []Message        `json:"messages"`
+	Tools      []ToolDefinition `json:"tools,omitempty"`
+	ToolChoice string           `json:"tool_choice,omitempty"`
+	Reasoning  *ReasoningConfig `json:"reasoning,omitempty"`
 }
 
 type chatResponse struct {
@@ -143,6 +148,10 @@ func (c *Client) chat(ctx context.Context, messages []Message, includeTools bool
 		req.ToolChoice = "auto"
 	}
 
+	if hasImage(messages) {
+		req.Reasoning = &ReasoningConfig{Effort: "high"}
+	}
+
 	body, err := json.Marshal(req)
 	if err != nil {
 		return "", nil, fmt.Errorf("marshal request: %w", err)
@@ -198,6 +207,21 @@ func (c *Client) chat(ctx context.Context, messages []Message, includeTools bool
 
 	msg := chatResp.Choices[0].Message
 	return msg.Content, msg.ToolCalls, nil
+}
+
+func hasImage(messages []Message) bool {
+	for _, m := range messages {
+		parts, ok := m.Content.([]ContentPart)
+		if !ok {
+			continue
+		}
+		for _, p := range parts {
+			if p.Type == "image_url" {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 
