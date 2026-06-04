@@ -22,10 +22,10 @@ Jika siswa mengirim gambar, analisis gambar tersebut dan bantu menjawab pertanya
 Bersikap sabar dan ramah layaknya guru yang membantu murid.
 
 Format output kamu HARUS seperti ini:
-===\n
-<jawaban singkat dan padat untuk soal>\n
-===\n
-<penjelasan langkah-langkah atau alasan mengapa jawabannya demikian>\n
+===<enter>
+<jawaban singkat dan padat untuk soal><enter>
+===<enter>
+<penjelasan langkah-langkah atau alasan mengapa jawabannya demikian><enter>
 ===`
 
 type Handler struct {
