@@ -25,7 +25,7 @@ Format output kamu HARUS seperti ini:
 ===<enter>
 <jawaban singkat dan padat untuk soal><enter>
 ===<enter>
-<penjelasan langkah-langkah atau alasan mengapa jawabannya demikian dangan singkat><enter>
+<penjelasan singkat><enter>
 ===`
 
 type Handler struct {
