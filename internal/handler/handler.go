@@ -89,16 +89,16 @@ func (h *Handler) Handle(ctx context.Context, phone, text string, imageBase64 st
 	}
 	messages = append(messages, ai.Message{Role: "user", Content: userContent})
 
-	// 4. Call AI with retry (2 attempts)
+	// 4. Call AI with retry (3 attempts)
 	var response string
-	for attempt := 1; attempt <= 2; attempt++ {
+	for attempt := 1; attempt <= 3; attempt++ {
 		var toolCalls []ai.ToolCall
 		var callErr error
 
 		response, toolCalls, callErr = h.ai.Chat(ctx, messages)
 		if callErr != nil {
-			logger.Error("AI call failed (attempt %d/2): %v", attempt, callErr)
-			if attempt == 2 {
+			logger.Error("AI call failed (attempt %d/3): %v", attempt, callErr)
+			if attempt == 3 {
 				return "", fmt.Errorf("ai call failed: %w", callErr)
 			}
 			continue
@@ -123,8 +123,8 @@ func (h *Handler) Handle(ctx context.Context, phone, text string, imageBase64 st
 			// Call again with tool results
 			response, toolCalls, callErr = h.ai.Chat(ctx, messages)
 			if callErr != nil {
-				logger.Error("AI call (tool result) failed (attempt %d/2): %v", attempt, callErr)
-				if attempt == 2 {
+				logger.Error("AI call (tool result) failed (attempt %d/3): %v", attempt, callErr)
+				if attempt == 3 {
 					return "", fmt.Errorf("ai call with tools failed: %w", callErr)
 				}
 				continue
@@ -135,7 +135,7 @@ func (h *Handler) Handle(ctx context.Context, phone, text string, imageBase64 st
 		if response != "" {
 			break
 		}
-		logger.Warn("AI returned empty response (attempt %d/2)", attempt)
+		logger.Warn("AI returned empty response (attempt %d/3)", attempt)
 	}
 
 	if response == "" {
