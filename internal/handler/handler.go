@@ -91,7 +91,7 @@ func (h *Handler) Handle(ctx context.Context, phone, text string, imageBase64 st
 
 	// 4. Call AI with retry (3 attempts)
 	var response string
-	for attempt := 1; attempt <= 3; attempt++ {
+	for attempt := 1; attempt <= 5; attempt++ {
 		var toolCalls []ai.ToolCall
 		var callErr error
 
